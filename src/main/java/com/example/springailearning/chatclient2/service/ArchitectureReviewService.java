@@ -19,6 +19,7 @@ public class ArchitectureReviewService {
 
         long startTime = System.currentTimeMillis();
         ChatResponse chatResponse = chatClient.prompt()
+            .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_V1)
                 .param("technology", reviewRequest.technology()))
             .call()
@@ -38,6 +39,7 @@ public class ArchitectureReviewService {
     public CompareResponse compare(CompareRequest compareRequest) {
         long startTime = System.currentTimeMillis();
         ChatResponse chatResponse = chatClient.prompt()
+            .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.TECHNOLOGY_COMPARISON_V1)
                 .param("technology1", compareRequest.technology1())
                 .param("technology2", compareRequest.technology2()))
