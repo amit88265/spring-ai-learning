@@ -1,7 +1,6 @@
 package com.example.springailearning.chatclient2.service;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
 import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
@@ -17,19 +16,13 @@ public class ArchitectureReviewService {
 
     public ReviewResponse review(ReviewRequest reviewRequest) {
 
-        long startTime = System.currentTimeMillis();
-        ChatResponse chatResponse = chatClient.prompt()
+        return chatClient.prompt()
             .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_V1)
                 .param("technology", reviewRequest.technology()))
             .call()
-            .chatResponse();
-        long latencyMs = System.currentTimeMillis() - startTime;
+            .entity(ReviewResponse.class);
 
-        return new ReviewResponse(chatResponse.getResult()
-            .getOutput()
-            .getText(), chatResponse.getMetadata()
-            .getModel(), latencyMs);
     }
 
     public ArchitectureReviewService(ChatClient.Builder chatClientBuilder) {
@@ -37,20 +30,13 @@ public class ArchitectureReviewService {
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
-        long startTime = System.currentTimeMillis();
-        ChatResponse chatResponse = chatClient.prompt()
+        return chatClient.prompt()
             .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.TECHNOLOGY_COMPARISON_V1)
                 .param("technology1", compareRequest.technology1())
                 .param("technology2", compareRequest.technology2()))
             .call()
-            .chatResponse();
-        long latencyMs = System.currentTimeMillis() - startTime;
-
-        return new CompareResponse(chatResponse.getResult()
-            .getOutput()
-            .getText(), chatResponse.getMetadata()
-            .getModel(), latencyMs);
+            .entity(CompareResponse.class);
 
     }
 }
