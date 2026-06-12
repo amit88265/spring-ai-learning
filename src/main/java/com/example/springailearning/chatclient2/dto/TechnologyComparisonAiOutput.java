@@ -2,7 +2,7 @@ package com.example.springailearning.chatclient2.dto;
 
 import java.util.List;
 
-public record CompareResponse(
+public record TechnologyComparisonAiOutput(
 
     String summary,
 
@@ -12,10 +12,8 @@ public record CompareResponse(
 
     List<String> technology2Strengths,
 
-    List<String> recommendations,
+    List<String> recommendations
 
-    String model,
-
-    Long latencyMs) {
+) {
 
 }

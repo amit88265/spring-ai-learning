@@ -11,19 +11,21 @@ import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.service.ArchitectureReviewService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/reviews")
 public class ArchitectureReviewController {
 
-    final ArchitectureReviewService architectureReviewService;
+    private final ArchitectureReviewService architectureReviewService;
 
     @PostMapping("/architecture")
-    public ReviewResponse review(@RequestBody ReviewRequest reviewRequest) {
+    public ReviewResponse review(@Valid @RequestBody ReviewRequest reviewRequest) {
        return architectureReviewService.review(reviewRequest);
     }
 
     @PostMapping("/compare")
-    public CompareResponse compare(@RequestBody CompareRequest compareRequest) {
+    public CompareResponse compare(@Valid @RequestBody CompareRequest compareRequest) {
        return architectureReviewService.compare(compareRequest);
     }
 

@@ -1,5 +1,7 @@
 package com.example.springailearning.chatclient2.dto;
 
-public record CompareRequest(String technology1, String technology2) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CompareRequest(@NotBlank String technology1, @NotBlank String technology2) {
 
 }
