@@ -23,7 +23,6 @@ public class ArchitectureReviewService {
 
         long startTime = System.currentTimeMillis();
         ArchitectureReviewAiOutput aiOutput = chatClient.prompt()
-            .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_V1)
                 .param("technology", reviewRequest.technology()))
             .call()
@@ -41,16 +40,15 @@ public class ArchitectureReviewService {
     }
 
     public ArchitectureReviewService(
-        ChatClient.Builder chatClientBuilder,
+        ChatClient chatClient,
         @Value("${spring.ai.google.genai.chat.model:unknown}") String model) {
-        this.chatClient = chatClientBuilder.build();
+        this.chatClient = chatClient;
         this.model = model;
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
         long startTime = System.currentTimeMillis();
         TechnologyComparisonAiOutput aiOutput = chatClient.prompt()
-            .system(PromptCatalogue.SYSTEM_MESSAGE)
             .user(user -> user.text(PromptCatalogue.TECHNOLOGY_COMPARISON_V1)
                 .param("technology1", compareRequest.technology1())
                 .param("technology2", compareRequest.technology2()))
