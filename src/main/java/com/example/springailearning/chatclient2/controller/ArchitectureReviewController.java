@@ -3,6 +3,7 @@ package com.example.springailearning.chatclient2.controller;
 import jakarta.validation.Valid;
 
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.service.ArchitectureReviewService;
@@ -40,6 +42,11 @@ public class ArchitectureReviewController {
     @PostMapping("/compare")
     public CompareResponse compare(@Valid @RequestBody CompareRequest compareRequest) {
         return architectureReviewService.compare(compareRequest);
+    }
+
+    @GetMapping("/provider")
+    public ProviderInfoResponse providerInfo() {
+        return architectureReviewService.providerInfo();
     }
 
     public ArchitectureReviewController(ArchitectureReviewService architectureReviewService) {

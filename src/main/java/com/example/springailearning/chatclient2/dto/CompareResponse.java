@@ -14,7 +14,11 @@ public record CompareResponse(
 
     List<String> recommendations,
 
+    String provider,
+
     String model,
+
+    String profile,
 
     Long latencyMs) {
 

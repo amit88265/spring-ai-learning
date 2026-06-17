@@ -2,6 +2,7 @@ package com.example.springailearning.chatclient2.config;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,6 +10,7 @@ import com.example.springailearning.chatclient2.advisor.AiAuditAdvisor;
 import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
 
 @Configuration
+@EnableConfigurationProperties(AiProviderProperties.class)
 public class AiClientConfig {
 
     @Bean

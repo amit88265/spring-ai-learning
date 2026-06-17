@@ -12,9 +12,12 @@ public record ReviewResponse(
 
     List<String> recommendations,
 
+    String provider,
+
     String model,
+
+    String profile,
 
     Long latencyMs) {
 
 }
-

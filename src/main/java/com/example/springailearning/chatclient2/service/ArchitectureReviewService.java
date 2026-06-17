@@ -5,14 +5,14 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.example.springailearning.chatclient2.advisor.AiAuditAdvisor;
 import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
+import com.example.springailearning.chatclient2.config.AiProviderProperties;
 import com.example.springailearning.chatclient2.dto.ArchitectureReviewAiOutput;
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.dto.TechnologyComparisonAiOutput;
@@ -26,7 +26,7 @@ public class ArchitectureReviewService {
 
     private final ChatClient chatClient;
 
-    private final String model;
+    private final AiProviderProperties aiProviderProperties;
 
     public Flux<String> streamReview(ReviewRequest reviewRequest) {
         return chatClient.prompt()
@@ -50,12 +50,21 @@ public class ArchitectureReviewService {
             .entity(ArchitectureReviewAiOutput.class);
         long latencyMs = System.currentTimeMillis() - startTime;
 
-        return new ReviewResponse(aiOutput.summary(), aiOutput.strengths(), aiOutput.weaknesses(), aiOutput.recommendations(), model, latencyMs);
+        return new ReviewResponse(
+            aiOutput.summary(),
+            aiOutput.strengths(),
+            aiOutput.weaknesses(),
+            aiOutput.recommendations(),
+            aiProviderProperties.provider(),
+            aiProviderProperties.model(),
+            aiProviderProperties.profile(),
+            latencyMs
+        );
     }
 
-    public ArchitectureReviewService(ChatClient chatClient, @Value("${spring.ai.google.genai.chat.model:unknown}") String model) {
+    public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties) {
         this.chatClient = chatClient;
-        this.model = model;
+        this.aiProviderProperties = aiProviderProperties;
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
@@ -69,7 +78,15 @@ public class ArchitectureReviewService {
         long latencyMs = System.currentTimeMillis() - startTime;
 
         return new CompareResponse(aiOutput.summary(), aiOutput.keyDifferences(), aiOutput.technology1Strengths(), aiOutput.technology2Strengths(),
-            aiOutput.recommendations(), model, latencyMs);
+            aiOutput.recommendations(), aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs);
+    }
+
+    public ProviderInfoResponse providerInfo() {
+        return new ProviderInfoResponse(
+            aiProviderProperties.provider(),
+            aiProviderProperties.model(),
+            aiProviderProperties.profile()
+        );
     }
 
     public Flux<String> streamCompare(@Valid CompareRequest compareRequest) {
