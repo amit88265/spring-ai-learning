@@ -19,14 +19,10 @@ public class AiAuditAdvisor implements CallAdvisor {
             log.info("AI request started. advisor={}", getName());
             ChatClientResponse response = callAdvisorChain.nextCall(chatClientRequest);
             long latencyMs = System.currentTimeMillis() - startTime;
-
             log.info("AI request completed. latencyMs={}", latencyMs);
-
             return response;
         } catch (RuntimeException ex) {
-
             long latencyMs = System.currentTimeMillis() - startTime;
-
             log.warn("AI request failed. latencyMs={}", latencyMs, ex);
 
             throw ex;

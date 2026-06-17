@@ -22,7 +22,7 @@ import reactor.core.publisher.Flux;
 @Service
 public class ArchitectureReviewService {
 
-    private static final Logger log = LoggerFactory.getLogger(AiAuditAdvisor.class);
+    private static final Logger log = LoggerFactory.getLogger(ArchitectureReviewService.class);
 
     private final ChatClient chatClient;
 

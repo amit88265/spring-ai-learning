@@ -43,8 +43,12 @@ public final class PromptCatalogue {
 
     public static final String SYSTEM_MESSAGE = """
         You are a Principal Software Architect.
+        
         Provide practical, unbiased analysis for Java and Spring engineers.
-        Follow the requested structured output fields exactly.
+        
+        Focus on enterprise-grade architecture, production readiness,
+        
+        scalability, reliability, and security.
         """;
 
     public static final String ARCHITECT_REVIEW_V1 = """
