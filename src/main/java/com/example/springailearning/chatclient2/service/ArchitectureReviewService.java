@@ -5,6 +5,9 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
 import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
@@ -12,10 +15,13 @@ import com.example.springailearning.chatclient2.config.AiProviderProperties;
 import com.example.springailearning.chatclient2.dto.ArchitectureReviewAiOutput;
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse;
 import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.dto.TechnologyComparisonAiOutput;
+import com.example.springailearning.chatclient2.dto.TokenUsage;
+import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
 
 import reactor.core.publisher.Flux;
 
@@ -27,6 +33,7 @@ public class ArchitectureReviewService {
     private final ChatClient chatClient;
 
     private final AiProviderProperties aiProviderProperties;
+    private final AiReviewMetrics aiReviewMetrics;
 
     public Flux<String> streamReview(ReviewRequest reviewRequest) {
         return chatClient.prompt()
@@ -43,28 +50,54 @@ public class ArchitectureReviewService {
     public ReviewResponse review(ReviewRequest reviewRequest) {
 
         long startTime = System.currentTimeMillis();
-        ArchitectureReviewAiOutput aiOutput = chatClient.prompt()
-            .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_V1)
-                .param("technology", reviewRequest.technology()))
-            .call()
-            .entity(ArchitectureReviewAiOutput.class);
-        long latencyMs = System.currentTimeMillis() - startTime;
+        ReviewResponse reviewResponse = null;
+        try {
+            ResponseEntity<ChatResponse, ArchitectureReviewAiOutput> response = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_V1)
+                    .param("technology", reviewRequest.technology()))
+                .call()
+                .responseEntity(ArchitectureReviewAiOutput.class);
+            long latencyMs = System.currentTimeMillis() - startTime;
+            ArchitectureReviewAiOutput aiOutput = response.getEntity();
+            ChatResponse chatResponse = response.getResponse();
+            Usage usage = chatResponse.getMetadata()
+                .getUsage();
 
-        return new ReviewResponse(
-            aiOutput.summary(),
-            aiOutput.strengths(),
-            aiOutput.weaknesses(),
-            aiOutput.recommendations(),
-            aiProviderProperties.provider(),
-            aiProviderProperties.model(),
-            aiProviderProperties.profile(),
-            latencyMs
-        );
+            TokenUsage tokenUsage = new TokenUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
+            reviewResponse = new ReviewResponse(aiOutput.summary(), aiOutput.strengths(), aiOutput.weaknesses(), aiOutput.recommendations(),
+                aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs,
+                PromptCatalogue.ARCHITECT_REVIEW_PROMPT_VERSION, tokenUsage);
+            aiReviewMetrics.recordSuccess("architecture", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, tokenUsage.totalTokens());
+        } catch (RuntimeException ex) {
+
+            long latencyMs = System.currentTimeMillis() - startTime;
+
+            aiReviewMetrics.recordFailure(
+
+                "architecture",
+
+                aiProviderProperties.provider(),
+
+                aiProviderProperties.model(),
+
+                latencyMs,
+
+                ex.getClass()
+                    .getSimpleName()
+
+            );
+
+            throw ex;
+
+        }
+
+        return reviewResponse;
     }
 
-    public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties) {
+    public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties, AiReviewMetrics aiReviewMetrics) {
         this.chatClient = chatClient;
         this.aiProviderProperties = aiProviderProperties;
+        this.aiReviewMetrics = aiReviewMetrics;
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
@@ -82,11 +115,7 @@ public class ArchitectureReviewService {
     }
 
     public ProviderInfoResponse providerInfo() {
-        return new ProviderInfoResponse(
-            aiProviderProperties.provider(),
-            aiProviderProperties.model(),
-            aiProviderProperties.profile()
-        );
+        return new ProviderInfoResponse(aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile());
     }
 
     public Flux<String> streamCompare(@Valid CompareRequest compareRequest) {
@@ -101,5 +130,10 @@ public class ArchitectureReviewService {
             .doOnComplete(() -> log.info("AI stream completed. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2()))
             .doOnCancel(() -> log.info("AI stream cancelled. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2()))
             .doOnError(ex -> log.warn("AI stream failed. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2(), ex));
+    }
+
+    public ObservabilitySummaryResponse observabilitySummary() {
+        return new ObservabilitySummaryResponse(aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(),
+            java.util.List.of("logs", "metrics", "prometheus", "tokenUsage"), java.util.List.of("ai.review.requests", "ai.review.latency", "ai.review.tokens"));
     }
 }

@@ -18,6 +18,10 @@ public record ReviewResponse(
 
     String profile,
 
-    Long latencyMs) {
+    Long latencyMs,
+
+    String promptVersion,
+
+    TokenUsage tokenUsage) {
 
 }

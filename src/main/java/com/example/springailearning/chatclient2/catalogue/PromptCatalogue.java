@@ -94,5 +94,11 @@ public final class PromptCatalogue {
         - technology2Strengths
         - recommendations
         """;
+    public static final String ARCHITECT_REVIEW_PROMPT_VERSION = "architect-review-v1";
 
+    public static final String TECHNOLOGY_COMPARISON_PROMPT_VERSION = "technology-comparison-v1";
+
+    public static final String ARCHITECT_REVIEW_STREAM_PROMPT_VERSION = "architect-review-stream-v1";
+
+    public static final String TECHNOLOGY_COMPARISON_STREAM_PROMPT_VERSION = "technology-comparison-stream-v1";
 }

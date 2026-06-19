@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse;
 import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
@@ -47,6 +48,11 @@ public class ArchitectureReviewController {
     @GetMapping("/provider")
     public ProviderInfoResponse providerInfo() {
         return architectureReviewService.providerInfo();
+    }
+
+    @GetMapping("/observability/summary")
+    public ObservabilitySummaryResponse observabilitySummary() {
+        return architectureReviewService.observabilitySummary();
     }
 
     public ArchitectureReviewController(ArchitectureReviewService architectureReviewService) {
