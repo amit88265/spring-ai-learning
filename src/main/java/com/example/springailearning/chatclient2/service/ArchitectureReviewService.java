@@ -59,11 +59,8 @@ public class ArchitectureReviewService {
                 .responseEntity(ArchitectureReviewAiOutput.class);
             long latencyMs = System.currentTimeMillis() - startTime;
             ArchitectureReviewAiOutput aiOutput = response.getEntity();
-            ChatResponse chatResponse = response.getResponse();
-            Usage usage = chatResponse.getMetadata()
-                .getUsage();
 
-            TokenUsage tokenUsage = new TokenUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
+            TokenUsage tokenUsage = extractTokenUsage(response.getResponse());
             reviewResponse = new ReviewResponse(aiOutput.summary(), aiOutput.strengths(), aiOutput.weaknesses(), aiOutput.recommendations(),
                 aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs,
                 PromptCatalogue.ARCHITECT_REVIEW_PROMPT_VERSION, tokenUsage);
@@ -102,16 +99,55 @@ public class ArchitectureReviewService {
 
     public CompareResponse compare(CompareRequest compareRequest) {
         long startTime = System.currentTimeMillis();
-        TechnologyComparisonAiOutput aiOutput = chatClient.prompt()
-            .user(user -> user.text(PromptCatalogue.TECHNOLOGY_COMPARISON_V1)
-                .param("technology1", compareRequest.technology1())
-                .param("technology2", compareRequest.technology2()))
-            .call()
-            .entity(TechnologyComparisonAiOutput.class);
-        long latencyMs = System.currentTimeMillis() - startTime;
+        try {
+            ResponseEntity<ChatResponse, TechnologyComparisonAiOutput> response = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.TECHNOLOGY_COMPARISON_V1)
+                    .param("technology1", compareRequest.technology1())
+                    .param("technology2", compareRequest.technology2()))
+                .call()
+                .responseEntity(TechnologyComparisonAiOutput.class);
+            long latencyMs = System.currentTimeMillis() - startTime;
+            TechnologyComparisonAiOutput aiOutput = response.getEntity();
+            TokenUsage tokenUsage = extractTokenUsage(response.getResponse());
 
-        return new CompareResponse(aiOutput.summary(), aiOutput.keyDifferences(), aiOutput.technology1Strengths(), aiOutput.technology2Strengths(),
-            aiOutput.recommendations(), aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs);
+            CompareResponse compareResponse = new CompareResponse(aiOutput.summary(), aiOutput.keyDifferences(), aiOutput.technology1Strengths(),
+                aiOutput.technology2Strengths(), aiOutput.recommendations(), aiProviderProperties.provider(), aiProviderProperties.model(),
+                aiProviderProperties.profile(), latencyMs, PromptCatalogue.TECHNOLOGY_COMPARISON_PROMPT_VERSION, tokenUsage);
+            aiReviewMetrics.recordSuccess("compare", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, tokenUsage.totalTokens());
+
+            return compareResponse;
+        } catch (RuntimeException e) {
+            long latencyMs = System.currentTimeMillis() - startTime;
+
+            aiReviewMetrics.recordFailure(
+
+                "compare",
+
+                aiProviderProperties.provider(),
+
+                aiProviderProperties.model(),
+
+                latencyMs,
+
+                e.getClass()
+                    .getSimpleName()
+
+            );
+
+            throw e;
+        }
+    }
+
+    private TokenUsage extractTokenUsage(ChatResponse chatResponse) {
+        if (chatResponse == null || chatResponse.getMetadata() == null || chatResponse.getMetadata()
+            .getUsage() == null) {
+            return new TokenUsage(null, null, null);
+        }
+
+        Usage usage = chatResponse.getMetadata()
+            .getUsage();
+
+        return new TokenUsage(usage.getPromptTokens(), usage.getCompletionTokens(), usage.getTotalTokens());
     }
 
     public ProviderInfoResponse providerInfo() {

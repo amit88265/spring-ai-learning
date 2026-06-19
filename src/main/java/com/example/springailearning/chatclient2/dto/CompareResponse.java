@@ -20,6 +20,9 @@ public record CompareResponse(
 
     String profile,
 
-    Long latencyMs) {
+    Long latencyMs,
 
+    String promptVersion,
+
+    TokenUsage tokenUsage) {
 }
