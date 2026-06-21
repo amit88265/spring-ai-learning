@@ -94,6 +94,20 @@ public final class PromptCatalogue {
         - technology2Strengths
         - recommendations
         """;
+    public static final String TOOL_AWARE_REVIEW_V1 = """
+        Review {technology} for enterprise adoption.
+        
+        Use the available architecture-notes tool when useful.
+        Explicitly mention whether tool data was available.
+        
+        Return:
+        - Summary
+        - Tool data used
+        - Strengths
+        - Risks
+        - Recommendations
+        """;
+    public static final String TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION = "tool-aware-architect-review-v1";
     public static final String ARCHITECT_REVIEW_PROMPT_VERSION = "architect-review-v1";
 
     public static final String TECHNOLOGY_COMPARISON_PROMPT_VERSION = "technology-comparison-v1";

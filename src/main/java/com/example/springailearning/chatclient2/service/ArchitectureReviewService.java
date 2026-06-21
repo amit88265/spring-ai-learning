@@ -2,6 +2,7 @@ package com.example.springailearning.chatclient2.service;
 
 import jakarta.validation.Valid;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -21,7 +22,9 @@ import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.dto.TechnologyComparisonAiOutput;
 import com.example.springailearning.chatclient2.dto.TokenUsage;
+import com.example.springailearning.chatclient2.dto.ToolAwareReviewResponse;
 import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
+import com.example.springailearning.chatclient2.tool.TechnologyKnowledgeTools;
 
 import reactor.core.publisher.Flux;
 
@@ -34,6 +37,7 @@ public class ArchitectureReviewService {
 
     private final AiProviderProperties aiProviderProperties;
     private final AiReviewMetrics aiReviewMetrics;
+    private final TechnologyKnowledgeTools technologyKnowledgeTools;
 
     public Flux<String> streamReview(ReviewRequest reviewRequest) {
         return chatClient.prompt()
@@ -91,10 +95,12 @@ public class ArchitectureReviewService {
         return reviewResponse;
     }
 
-    public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties, AiReviewMetrics aiReviewMetrics) {
+    public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties, AiReviewMetrics aiReviewMetrics,
+        TechnologyKnowledgeTools technologyKnowledgeTools) {
         this.chatClient = chatClient;
         this.aiProviderProperties = aiProviderProperties;
         this.aiReviewMetrics = aiReviewMetrics;
+        this.technologyKnowledgeTools = technologyKnowledgeTools;
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
@@ -171,5 +177,21 @@ public class ArchitectureReviewService {
     public ObservabilitySummaryResponse observabilitySummary() {
         return new ObservabilitySummaryResponse(aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(),
             java.util.List.of("logs", "metrics", "prometheus", "tokenUsage"), java.util.List.of("ai.review.requests", "ai.review.latency", "ai.review.tokens"));
+    }
+
+    public @Nullable ToolAwareReviewResponse reviewWithTools(ReviewRequest request) {
+        long startTIme = System.currentTimeMillis();
+        ResponseEntity<ChatResponse, ArchitectureReviewAiOutput> response = chatClient.prompt()
+            .user(user -> user.text(PromptCatalogue.TOOL_AWARE_REVIEW_V1)
+                .param("technology", request.technology()))
+            .tools(technologyKnowledgeTools)
+            .call()
+            .responseEntity(ArchitectureReviewAiOutput.class);
+        long endTIme = System.currentTimeMillis();
+        ArchitectureReviewAiOutput aiOutput = response.getEntity();
+        return new ToolAwareReviewResponse(aiOutput.summary(), true, null, aiOutput.strengths(), null, aiOutput.recommendations(),
+            aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(),
+            PromptCatalogue.TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION, extractTokenUsage(response.response()), endTIme - startTIme);
+
     }
 }

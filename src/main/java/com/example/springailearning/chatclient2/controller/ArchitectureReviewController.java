@@ -2,6 +2,7 @@ package com.example.springailearning.chatclient2.controller;
 
 import jakarta.validation.Valid;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,6 +16,7 @@ import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse
 import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
+import com.example.springailearning.chatclient2.dto.ToolAwareReviewResponse;
 import com.example.springailearning.chatclient2.service.ArchitectureReviewService;
 
 import reactor.core.publisher.Flux;
@@ -57,5 +59,11 @@ public class ArchitectureReviewController {
 
     public ArchitectureReviewController(ArchitectureReviewService architectureReviewService) {
         this.architectureReviewService = architectureReviewService;
+    }
+    @PostMapping("/architecture/tools")
+    public @Nullable ToolAwareReviewResponse reviewWithTools(
+        @Valid @RequestBody ReviewRequest reviewRequest) {
+
+        return architectureReviewService.reviewWithTools(reviewRequest);
     }
 }
