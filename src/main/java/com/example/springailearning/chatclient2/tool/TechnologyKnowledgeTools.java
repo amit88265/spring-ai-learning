@@ -37,9 +37,14 @@ public class TechnologyKnowledgeTools {
         @ToolParam(description = "Technology name, for example Kafka, RabbitMQ, or Kubernetes")
         String technology) {
 
-        return TECHNOLOGY_NOTES.getOrDefault(
-            technology,
-            "No internal architecture notes are available for: " + technology
-        );
+        String normalizedTechnology = technology == null ? "" : technology.trim()
+            .toLowerCase();
+
+        return switch (normalizedTechnology) {
+            case "kafka" -> TECHNOLOGY_NOTES.get("Kafka");
+            case "rabbitmq", "rabbit mq" -> TECHNOLOGY_NOTES.get("RabbitMQ");
+            case "kubernetes", "k8s" -> TECHNOLOGY_NOTES.get("Kubernetes");
+            default -> "No internal architecture notes are available for: " + technology;
+        };
     }
 }

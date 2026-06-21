@@ -2,7 +2,6 @@ package com.example.springailearning.chatclient2.service;
 
 import jakarta.validation.Valid;
 
-import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
@@ -22,6 +21,7 @@ import com.example.springailearning.chatclient2.dto.ReviewRequest;
 import com.example.springailearning.chatclient2.dto.ReviewResponse;
 import com.example.springailearning.chatclient2.dto.TechnologyComparisonAiOutput;
 import com.example.springailearning.chatclient2.dto.TokenUsage;
+import com.example.springailearning.chatclient2.dto.ToolAwareReviewAiOutput;
 import com.example.springailearning.chatclient2.dto.ToolAwareReviewResponse;
 import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
 import com.example.springailearning.chatclient2.tool.TechnologyKnowledgeTools;
@@ -179,19 +179,55 @@ public class ArchitectureReviewService {
             java.util.List.of("logs", "metrics", "prometheus", "tokenUsage"), java.util.List.of("ai.review.requests", "ai.review.latency", "ai.review.tokens"));
     }
 
-    public @Nullable ToolAwareReviewResponse reviewWithTools(ReviewRequest request) {
-        long startTIme = System.currentTimeMillis();
-        ResponseEntity<ChatResponse, ArchitectureReviewAiOutput> response = chatClient.prompt()
-            .user(user -> user.text(PromptCatalogue.TOOL_AWARE_REVIEW_V1)
-                .param("technology", request.technology()))
-            .tools(technologyKnowledgeTools)
-            .call()
-            .responseEntity(ArchitectureReviewAiOutput.class);
-        long endTIme = System.currentTimeMillis();
-        ArchitectureReviewAiOutput aiOutput = response.getEntity();
-        return new ToolAwareReviewResponse(aiOutput.summary(), true, null, aiOutput.strengths(), null, aiOutput.recommendations(),
-            aiProviderProperties.provider(), aiProviderProperties.model(), aiProviderProperties.profile(),
-            PromptCatalogue.TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION, extractTokenUsage(response.response()), endTIme - startTIme);
+    public ToolAwareReviewResponse reviewWithTools(ReviewRequest request) {
+        long startTime = System.currentTimeMillis();
+        try {
+            ResponseEntity<ChatResponse, ToolAwareReviewAiOutput> response = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.TOOL_AWARE_REVIEW_V1)
+                    .param("technology", request.technology()))
+                .tools(technologyKnowledgeTools)
+                .call()
+                .responseEntity(ToolAwareReviewAiOutput.class);
+            long latencyMs = System.currentTimeMillis() - startTime;
+            ToolAwareReviewAiOutput aiOutput = response.getEntity();
+            TokenUsage tokenUsage = extractTokenUsage(response.response());
+
+            ToolAwareReviewResponse toolAwareReviewResponse = new ToolAwareReviewResponse(
+                aiOutput.summary(),
+                aiOutput.toolDataAvailable(),
+                aiOutput.toolFactsUsed(),
+                aiOutput.strengths(),
+                aiOutput.risks(),
+                aiOutput.recommendations(),
+                aiProviderProperties.provider(),
+                aiProviderProperties.model(),
+                aiProviderProperties.profile(),
+                PromptCatalogue.TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION,
+                tokenUsage,
+                latencyMs
+            );
+            aiReviewMetrics.recordSuccess(
+                "architecture-tools",
+                aiProviderProperties.provider(),
+                aiProviderProperties.model(),
+                latencyMs,
+                tokenUsage.totalTokens()
+            );
+
+            return toolAwareReviewResponse;
+        } catch (RuntimeException ex) {
+            long latencyMs = System.currentTimeMillis() - startTime;
+            aiReviewMetrics.recordFailure(
+                "architecture-tools",
+                aiProviderProperties.provider(),
+                aiProviderProperties.model(),
+                latencyMs,
+                ex.getClass()
+                    .getSimpleName()
+            );
+
+            throw ex;
+        }
 
     }
 }
