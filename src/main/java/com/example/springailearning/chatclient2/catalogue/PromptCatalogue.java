@@ -108,7 +108,24 @@ public final class PromptCatalogue {
         - risks
         - recommendations
         """;
+
+    public static final String FUNCTION_TOOL_AWARE_REVIEW_V1 = """
+        Review {technology} for enterprise adoption.
+        
+        Use the risk-score function if risk scoring is useful.
+        Assume deploymentScale is "enterprise".
+        Assume regulatedData is true.
+        
+        Return:
+            - Summary
+                        - Whether risk score function was used
+                        - Risk score
+                        - Risk level
+                        - Main risks
+                        - Recommendations
+        """;
     public static final String TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION = "tool-aware-architect-review-v1";
+    public static final String FUNCTION_TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION = "tool-aware-architect-review-v1";
     public static final String ARCHITECT_REVIEW_PROMPT_VERSION = "architect-review-v1";
 
     public static final String TECHNOLOGY_COMPARISON_PROMPT_VERSION = "technology-comparison-v1";

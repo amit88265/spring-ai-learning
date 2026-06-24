@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.FunctionRiskReviewResponse;
 import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse;
 import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
@@ -60,10 +61,15 @@ public class ArchitectureReviewController {
     public ArchitectureReviewController(ArchitectureReviewService architectureReviewService) {
         this.architectureReviewService = architectureReviewService;
     }
-    @PostMapping("/architecture/tools")
-    public @Nullable ToolAwareReviewResponse reviewWithTools(
-        @Valid @RequestBody ReviewRequest reviewRequest) {
 
+    @PostMapping("/architecture/tools")
+    public @Nullable ToolAwareReviewResponse reviewWithTools(@Valid @RequestBody ReviewRequest reviewRequest) {
         return architectureReviewService.reviewWithTools(reviewRequest);
     }
+
+    @PostMapping("/architecture/function-risk")
+    public FunctionRiskReviewResponse reviewWithFunctionTool(@Valid @RequestBody ReviewRequest request) {
+        return architectureReviewService.reviewWithFunctionTool(request);
+    }
+
 }

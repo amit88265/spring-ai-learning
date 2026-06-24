@@ -8,6 +8,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.stereotype.Service;
 
 import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
@@ -15,6 +16,8 @@ import com.example.springailearning.chatclient2.config.AiProviderProperties;
 import com.example.springailearning.chatclient2.dto.ArchitectureReviewAiOutput;
 import com.example.springailearning.chatclient2.dto.CompareRequest;
 import com.example.springailearning.chatclient2.dto.CompareResponse;
+import com.example.springailearning.chatclient2.dto.FunctionRiskReviewAiOutput;
+import com.example.springailearning.chatclient2.dto.FunctionRiskReviewResponse;
 import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse;
 import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
 import com.example.springailearning.chatclient2.dto.ReviewRequest;
@@ -38,6 +41,7 @@ public class ArchitectureReviewService {
     private final AiProviderProperties aiProviderProperties;
     private final AiReviewMetrics aiReviewMetrics;
     private final TechnologyKnowledgeTools technologyKnowledgeTools;
+    private final ToolCallback technologyRiskScoreTool;
 
     public Flux<String> streamReview(ReviewRequest reviewRequest) {
         return chatClient.prompt()
@@ -96,11 +100,12 @@ public class ArchitectureReviewService {
     }
 
     public ArchitectureReviewService(ChatClient chatClient, AiProviderProperties aiProviderProperties, AiReviewMetrics aiReviewMetrics,
-        TechnologyKnowledgeTools technologyKnowledgeTools) {
+        TechnologyKnowledgeTools technologyKnowledgeTools, ToolCallback technologyRiskScoreTool) {
         this.chatClient = chatClient;
         this.aiProviderProperties = aiProviderProperties;
         this.aiReviewMetrics = aiReviewMetrics;
         this.technologyKnowledgeTools = technologyKnowledgeTools;
+        this.technologyRiskScoreTool = technologyRiskScoreTool;
     }
 
     public CompareResponse compare(CompareRequest compareRequest) {
@@ -145,9 +150,11 @@ public class ArchitectureReviewService {
     }
 
     private TokenUsage extractTokenUsage(ChatResponse chatResponse) {
-        if (chatResponse == null || chatResponse.getMetadata() == null || chatResponse.getMetadata()
-            .getUsage() == null) {
+        if (chatResponse == null) {
             return new TokenUsage(null, null, null);
+        } else {
+            chatResponse.getMetadata()
+                .getUsage();
         }
 
         Usage usage = chatResponse.getMetadata()
@@ -192,42 +199,50 @@ public class ArchitectureReviewService {
             ToolAwareReviewAiOutput aiOutput = response.getEntity();
             TokenUsage tokenUsage = extractTokenUsage(response.response());
 
-            ToolAwareReviewResponse toolAwareReviewResponse = new ToolAwareReviewResponse(
-                aiOutput.summary(),
-                aiOutput.toolDataAvailable(),
-                aiOutput.toolFactsUsed(),
-                aiOutput.strengths(),
-                aiOutput.risks(),
-                aiOutput.recommendations(),
-                aiProviderProperties.provider(),
-                aiProviderProperties.model(),
-                aiProviderProperties.profile(),
-                PromptCatalogue.TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION,
-                tokenUsage,
-                latencyMs
-            );
-            aiReviewMetrics.recordSuccess(
-                "architecture-tools",
-                aiProviderProperties.provider(),
-                aiProviderProperties.model(),
-                latencyMs,
-                tokenUsage.totalTokens()
-            );
+            ToolAwareReviewResponse toolAwareReviewResponse = new ToolAwareReviewResponse(aiOutput.summary(), aiOutput.toolDataAvailable(),
+                aiOutput.toolFactsUsed(), aiOutput.strengths(), aiOutput.risks(), aiOutput.recommendations(), aiProviderProperties.provider(),
+                aiProviderProperties.model(), aiProviderProperties.profile(), PromptCatalogue.TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION, tokenUsage,
+                latencyMs);
+            aiReviewMetrics.recordSuccess("architecture-tools", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs,
+                tokenUsage.totalTokens());
 
             return toolAwareReviewResponse;
         } catch (RuntimeException ex) {
             long latencyMs = System.currentTimeMillis() - startTime;
-            aiReviewMetrics.recordFailure(
-                "architecture-tools",
-                aiProviderProperties.provider(),
-                aiProviderProperties.model(),
-                latencyMs,
-                ex.getClass()
-                    .getSimpleName()
-            );
+            aiReviewMetrics.recordFailure("architecture-tools", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, ex.getClass()
+                .getSimpleName());
 
             throw ex;
         }
 
+    }
+
+    public FunctionRiskReviewResponse reviewWithFunctionTool(ReviewRequest request) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            ResponseEntity<ChatResponse, FunctionRiskReviewAiOutput> response = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.FUNCTION_TOOL_AWARE_REVIEW_V1)
+                    .param("technology", request.technology()))
+                .tools(technologyRiskScoreTool)
+                .call()
+                .responseEntity(FunctionRiskReviewAiOutput.class);
+            TokenUsage tokenUsage = extractTokenUsage(response.response());
+            long latency = System.currentTimeMillis() - startTime;
+            FunctionRiskReviewAiOutput aiOutput = response.getEntity();
+            FunctionRiskReviewResponse functionRiskReviewResponse = new FunctionRiskReviewResponse(aiOutput.summary(), aiOutput.functionUsed(),
+                aiOutput.riskScore(), aiOutput.riskLevel(), aiOutput.riskReasoning(), aiOutput.risks(), aiOutput.recommendations(), providerInfo().provider(),
+                aiProviderProperties.model(), providerInfo().profile(), PromptCatalogue.FUNCTION_TOOL_AWARE_ARCHITECT_REVIEW_PROMPT_VERSION, tokenUsage,
+                latency);
+            aiReviewMetrics.recordSuccess("architecture-function-risk", aiProviderProperties.provider(), aiProviderProperties.model(), latency,
+                tokenUsage.totalTokens());
+            return functionRiskReviewResponse;
+        } catch (Exception e) {
+            long latencyMs = System.currentTimeMillis() - startTime;
+            aiReviewMetrics.recordFailure("architecture-function-risk", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, e.getClass()
+                .getSimpleName());
+
+            throw e;
+        }
     }
 }
