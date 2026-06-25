@@ -5,7 +5,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.example.springailearning.chatclient2.dto.RiskScoreRequest;
+import com.example.springailearning.chatclient2.dto.request.RiskScoreRequest;
 import com.example.springailearning.chatclient2.service.TechnologyRiskScoreFunction;
 
 @Configuration

@@ -1,4 +1,4 @@
-package com.example.springailearning.chatclient2.dto;
+package com.example.springailearning.chatclient2.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 

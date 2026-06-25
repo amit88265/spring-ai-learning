@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import java.util.Locale;
 import java.util.function.Function;
 
-import com.example.springailearning.chatclient2.dto.RiskScoreRequest;
-import com.example.springailearning.chatclient2.dto.RiskScoreResponse;
+import com.example.springailearning.chatclient2.dto.request.RiskScoreRequest;
+import com.example.springailearning.chatclient2.dto.response.RiskScoreResponse;
 
 @Component
 public class TechnologyRiskScoreFunction

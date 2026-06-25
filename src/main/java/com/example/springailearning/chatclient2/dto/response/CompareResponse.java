@@ -1,6 +1,8 @@
-package com.example.springailearning.chatclient2.dto;
+package com.example.springailearning.chatclient2.dto.response;
 
 import java.util.List;
+
+import com.example.springailearning.chatclient2.dto.TokenUsage;
 
 public record CompareResponse(
 

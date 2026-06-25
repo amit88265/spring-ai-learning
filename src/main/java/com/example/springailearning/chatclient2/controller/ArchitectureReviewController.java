@@ -10,14 +10,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.springailearning.chatclient2.dto.CompareRequest;
-import com.example.springailearning.chatclient2.dto.CompareResponse;
-import com.example.springailearning.chatclient2.dto.FunctionRiskReviewResponse;
-import com.example.springailearning.chatclient2.dto.ObservabilitySummaryResponse;
-import com.example.springailearning.chatclient2.dto.ProviderInfoResponse;
-import com.example.springailearning.chatclient2.dto.ReviewRequest;
-import com.example.springailearning.chatclient2.dto.ReviewResponse;
-import com.example.springailearning.chatclient2.dto.ToolAwareReviewResponse;
+import com.example.springailearning.chatclient2.dto.request.CompareRequest;
+import com.example.springailearning.chatclient2.dto.response.CompareResponse;
+import com.example.springailearning.chatclient2.dto.response.FunctionRiskReviewResponse;
+import com.example.springailearning.chatclient2.dto.response.ObservabilitySummaryResponse;
+import com.example.springailearning.chatclient2.dto.response.ProviderInfoResponse;
+import com.example.springailearning.chatclient2.dto.request.ReviewRequest;
+import com.example.springailearning.chatclient2.dto.response.ReviewResponse;
+import com.example.springailearning.chatclient2.dto.response.ToolAwareReviewResponse;
 import com.example.springailearning.chatclient2.service.ArchitectureReviewService;
 
 import reactor.core.publisher.Flux;
