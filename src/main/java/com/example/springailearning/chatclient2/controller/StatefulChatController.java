@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.springailearning.chatclient2.dto.ConversationState;
 import com.example.springailearning.chatclient2.dto.request.StatefulChatRequest;
+import com.example.springailearning.chatclient2.dto.response.ConversationStateSummaryResponse;
 import com.example.springailearning.chatclient2.dto.response.StatefulChatResponse;
 import com.example.springailearning.chatclient2.service.StatefulChatService;
 
@@ -33,6 +34,11 @@ public class StatefulChatController {
     @GetMapping("/{conversationId}")
     public ConversationState getState(@PathVariable String conversationId) {
         return statefulChatService.getState(conversationId);
+    }
+
+    @GetMapping("/{conversationId}/summary")
+    public ConversationStateSummaryResponse summary(@PathVariable String conversationId) {
+        return statefulChatService.summary(conversationId);
     }
 
     @DeleteMapping("/{conversationId}")

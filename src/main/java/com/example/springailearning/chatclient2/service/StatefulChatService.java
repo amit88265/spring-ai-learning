@@ -9,6 +9,7 @@ import com.example.springailearning.chatclient2.catalogue.PromptCatalogue;
 import com.example.springailearning.chatclient2.config.AiProviderProperties;
 import com.example.springailearning.chatclient2.dto.ConversationState;
 import com.example.springailearning.chatclient2.dto.request.StatefulChatRequest;
+import com.example.springailearning.chatclient2.dto.response.ConversationStateSummaryResponse;
 import com.example.springailearning.chatclient2.dto.response.StatefulChatResponse;
 import com.example.springailearning.chatclient2.state.ConversationStateRepository;
 import com.example.springailearning.chatclient2.state.ConversationStateUpdater;
@@ -59,6 +60,21 @@ public class StatefulChatService {
 
     public ConversationState getState(String conversationId) {
         return stateRepository.getOrCreate(conversationId);
+    }
+
+    public ConversationStateSummaryResponse summary(String conversationId) {
+        ConversationState state = stateRepository.getOrCreate(conversationId);
+
+        return new ConversationStateSummaryResponse(
+            state.conversationId(),
+            state.technology() != null && !state.technology()
+                .isBlank(),
+            state.deploymentScale() != null && !state.deploymentScale()
+                .isBlank(),
+            state.regulatedData() != null,
+            state.currentStep(),
+            state.pendingAction()
+        );
     }
 
     public void clear(String conversationId) {
