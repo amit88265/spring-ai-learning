@@ -133,4 +133,19 @@ public final class PromptCatalogue {
     public static final String ARCHITECT_REVIEW_STREAM_PROMPT_VERSION = "architect-review-stream-v1";
 
     public static final String TECHNOLOGY_COMPARISON_STREAM_PROMPT_VERSION = "technology-comparison-stream-v1";
+    public static final String STATEFUL_CHAT_V1 = """
+        You are helping with an enterprise architecture conversation.
+        
+        Current structured conversation state:
+        {state}
+        
+        User message:
+        {message}
+        
+        Use the state to answer consistently.
+        If important information is missing, ask one focused follow-up question.
+        Do not invent state values.
+        """;
+
+    public static final String STATEFUL_CHAT_PROMPT_VERSION = "stateful-chat-v1";
 }

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Memory Chat</title>
+    <link rel="stylesheet" href="/chat/styles.css">
+</head>
+<body>
+<main class="app-shell">
+    <aside class="sidebar" aria-label="Chat sessions">
+        <div class="sidebar-header">
+            <h1>Memory Chat</h1>
+            <button id="new-chat-button" class="primary-button" type="button">New Chat</button>
+        </div>
+        <div id="session-list" class="session-list"></div>
+    </aside>
+
+    <section class="chat-panel" aria-label="Chat conversation">
+        <header class="chat-header">
+            <div>
+                <p class="eyebrow">Spring AI</p>
+                <h2 id="session-title">New chat</h2>
+            </div>
+            <div class="header-actions">
+                <span id="memory-count" class="memory-count">0 memory messages</span>
+                <button id="clear-chat-button" class="ghost-button" type="button">Clear</button>
+            </div>
+        </header>
+
+        <div id="messages" class="messages" aria-live="polite"></div>
+
+        <form id="chat-form" class="composer">
+            <label class="sr-only" for="prompt-input">Prompt</label>
+            <textarea id="prompt-input" name="prompt" rows="1" placeholder="Ask anything..." autocomplete="off"></textarea>
+            <button id="send-button" class="send-button" type="submit">Send</button>
+        </form>
+    </section>
+</main>
+
+<script src="/chat/app.js"></script>
+</body>
+</html>
