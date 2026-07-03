@@ -148,4 +148,35 @@ public final class PromptCatalogue {
         """;
 
     public static final String STATEFUL_CHAT_PROMPT_VERSION = "stateful-chat-v1";
+    public static final String MULTI_TURN_ARCHITECTURE_REVIEW_V1 = """
+        You are guiding an enterprise architecture review conversation.
+        
+        Current workflow step:
+        {step}
+        
+        Known structured state:
+        {state}
+        
+        Missing fields:
+        {missingFields}
+        
+        User message:
+        {message}
+        
+        Behavior rules:
+        - Use known state instead of asking for it again.
+        - If fields are missing, ask one concise follow-up question.
+        - If no fields are missing, provide an architecture review.
+        - Do not invent missing state values.
+        - Do not claim that a tool was used unless tool information is present.
+        
+        For review answers, cover:
+        - Summary
+        - Risks
+        - Reliability considerations
+        - Security considerations
+        - Production recommendations
+        """;
+
+    public static final String MULTI_TURN_ARCHITECTURE_REVIEW_PROMPT_VERSION = "multi-turn-architecture-review-v1";
 }
