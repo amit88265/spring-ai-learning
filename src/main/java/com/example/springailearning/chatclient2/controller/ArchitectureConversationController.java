@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.springailearning.chatclient2.dto.ConversationState;
 import com.example.springailearning.chatclient2.dto.request.ArchitectureConversationRequest;
 import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationResponse;
+import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationStatusResponse;
 import com.example.springailearning.chatclient2.service.ArchitectureConversationService;
 
 @RestController
@@ -38,5 +39,10 @@ public class ArchitectureConversationController {
     @DeleteMapping("/{conversationId}")
     public void clear(@PathVariable String conversationId) {
         service.clear(conversationId);
+    }
+
+    @GetMapping("/{conversationId}/status")
+    public ArchitectureConversationStatusResponse status(@PathVariable String conversationId) {
+        return service.getStatus(conversationId);
     }
 }

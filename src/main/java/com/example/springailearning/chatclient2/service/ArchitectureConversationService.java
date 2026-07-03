@@ -13,6 +13,7 @@ import com.example.springailearning.chatclient2.conversation.ArchitectureConvers
 import com.example.springailearning.chatclient2.dto.ConversationState;
 import com.example.springailearning.chatclient2.dto.request.ArchitectureConversationRequest;
 import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationResponse;
+import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationStatusResponse;
 import com.example.springailearning.chatclient2.enums.ArchitectureConversationStep;
 import com.example.springailearning.chatclient2.state.ConversationStateRepository;
 import com.example.springailearning.chatclient2.state.ConversationStateUpdater;
@@ -87,5 +88,12 @@ public class ArchitectureConversationService {
             currentStep: %s
             pendingAction: %s
             """.formatted(state.technology(), state.deploymentScale(), state.regulatedData(), state.currentStep(), state.pendingAction());
+    }
+
+    public ArchitectureConversationStatusResponse getStatus(String conversationId) {
+        ConversationState conversationState = stateRepository.getOrCreate(conversationId);
+        List<String> strings = stepResolver.missingFields(conversationState);
+        ArchitectureConversationStep step = stepResolver.resolve(conversationState);
+        return new ArchitectureConversationStatusResponse(conversationId, step, strings, step.equals(ArchitectureConversationStep.READY_FOR_REVIEW));
     }
 }
