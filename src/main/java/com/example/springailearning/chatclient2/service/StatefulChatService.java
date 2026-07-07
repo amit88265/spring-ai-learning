@@ -11,6 +11,7 @@ import com.example.springailearning.chatclient2.dto.ConversationState;
 import com.example.springailearning.chatclient2.dto.request.StatefulChatRequest;
 import com.example.springailearning.chatclient2.dto.response.ConversationStateSummaryResponse;
 import com.example.springailearning.chatclient2.dto.response.StatefulChatResponse;
+import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
 import com.example.springailearning.chatclient2.state.ConversationStateRepository;
 import com.example.springailearning.chatclient2.state.ConversationStateUpdater;
 
@@ -22,40 +23,49 @@ public class StatefulChatService {
     private final AiProviderProperties aiProviderProperties;
     private final ConversationStateRepository stateRepository;
     private final ConversationStateUpdater stateUpdater;
+    private final AiReviewMetrics aiReviewMetrics;
 
     public StatefulChatService(ChatClient chatClient, ChatMemory chatMemory, AiProviderProperties aiProviderProperties,
-        ConversationStateRepository stateRepository, ConversationStateUpdater stateUpdater) {
+        ConversationStateRepository stateRepository, ConversationStateUpdater stateUpdater, AiReviewMetrics aiReviewMetrics) {
 
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.aiProviderProperties = aiProviderProperties;
         this.stateRepository = stateRepository;
         this.stateUpdater = stateUpdater;
+        this.aiReviewMetrics = aiReviewMetrics;
     }
 
     public StatefulChatResponse chat(StatefulChatRequest request) {
         long start = System.currentTimeMillis();
+        try {
 
-        ConversationState currentState = stateRepository.getOrCreate(request.conversationId());
+            ConversationState currentState = stateRepository.getOrCreate(request.conversationId());
 
-        ConversationState updatedState = stateUpdater.updateFromUserMessage(currentState, request.message());
+            ConversationState updatedState = stateUpdater.updateFromUserMessage(currentState, request.message());
 
-        stateRepository.save(updatedState);
+            stateRepository.save(updatedState);
 
-        String answer = chatClient.prompt()
-            .user(user -> user.text(PromptCatalogue.STATEFUL_CHAT_V1)
-                .param("state", updatedState.toString())
-                .param("message", request.message()))
-            .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
-                .build())
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
-            .call()
-            .content();
+            String answer = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.STATEFUL_CHAT_V1)
+                    .param("state", updatedState.toString())
+                    .param("message", request.message()))
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                    .build())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
+                .call()
+                .content();
 
-        long latencyMs = System.currentTimeMillis() - start;
+            long latencyMs = System.currentTimeMillis() - start;
 
-        return new StatefulChatResponse(request.conversationId(), answer, updatedState, aiProviderProperties.provider(), aiProviderProperties.model(),
-            aiProviderProperties.profile(), latencyMs);
+            return new StatefulChatResponse(request.conversationId(), answer, updatedState, aiProviderProperties.provider(), aiProviderProperties.model(),
+                aiProviderProperties.profile(), latencyMs);
+        } catch (RuntimeException ex) {
+            long latencyMs = System.currentTimeMillis() - start;
+            aiReviewMetrics.recordFailure("stateful-chat", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, ex.getClass()
+                .getSimpleName());
+            throw ex;
+        }
     }
 
     public ConversationState getState(String conversationId) {

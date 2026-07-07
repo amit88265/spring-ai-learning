@@ -44,6 +44,7 @@ public class ArchitectureReviewService {
     private final ToolCallback technologyRiskScoreTool;
 
     public Flux<String> streamReview(ReviewRequest reviewRequest) {
+        long startTime = System.currentTimeMillis();
         return chatClient.prompt()
             .user(user -> user.text(PromptCatalogue.ARCHITECT_REVIEW_STREAM_V1)
                 .param("technology", reviewRequest.technology()))
@@ -52,7 +53,12 @@ public class ArchitectureReviewService {
             .doOnSubscribe(subscription -> log.info("AI Stream started, technology: {}", reviewRequest.technology()))
             .doOnComplete(() -> log.info("AI stream completed. technology={}", reviewRequest.technology()))
             .doOnCancel(() -> log.info("AI stream cancelled. technology={}", reviewRequest.technology()))
-            .doOnError(ex -> log.warn("AI stream failed. technology={}", reviewRequest.technology(), ex));
+            .doOnError(ex -> {
+                long latencyMs = System.currentTimeMillis() - startTime;
+                aiReviewMetrics.recordFailure("architecture-stream", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, ex.getClass()
+                    .getSimpleName());
+                log.warn("AI stream failed. technology={}", reviewRequest.technology(), ex);
+            });
     }
 
     public ReviewResponse review(ReviewRequest reviewRequest) {
@@ -168,6 +174,7 @@ public class ArchitectureReviewService {
     }
 
     public Flux<String> streamCompare(@Valid CompareRequest compareRequest) {
+        long startTime = System.currentTimeMillis();
         return chatClient.prompt()
             .user(user -> user.text(PromptCatalogue.ARCHITECT_COMPARE_STREAM_V1)
                 .param("technology1", compareRequest.technology1())
@@ -178,7 +185,12 @@ public class ArchitectureReviewService {
                 subscription -> log.info("AI Stream started, technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2()))
             .doOnComplete(() -> log.info("AI stream completed. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2()))
             .doOnCancel(() -> log.info("AI stream cancelled. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2()))
-            .doOnError(ex -> log.warn("AI stream failed. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2(), ex));
+            .doOnError(ex -> {
+                long latencyMs = System.currentTimeMillis() - startTime;
+                aiReviewMetrics.recordFailure("compare-stream", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, ex.getClass()
+                    .getSimpleName());
+                log.warn("AI stream failed. technology1 {} and technology2: {}", compareRequest.technology1(), compareRequest.technology2(), ex);
+            });
     }
 
     public ObservabilitySummaryResponse observabilitySummary() {

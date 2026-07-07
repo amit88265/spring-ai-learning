@@ -11,6 +11,7 @@ import com.example.springailearning.chatclient2.config.AiProviderProperties;
 import com.example.springailearning.chatclient2.dto.request.MemoryChatRequest;
 import com.example.springailearning.chatclient2.dto.response.ConversationMemorySummaryResponse;
 import com.example.springailearning.chatclient2.dto.response.MemoryChatResponse;
+import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
 
 @Service
 public class MemoryChatService {
@@ -18,26 +19,35 @@ public class MemoryChatService {
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
     private final AiProviderProperties aiProviderProperties;
+    private final AiReviewMetrics aiReviewMetrics;
 
     public MemoryChatResponse chat(@Valid MemoryChatRequest request) {
-        long currentTimeMillis = System.currentTimeMillis();
-        String content = chatClient.prompt()
-            .user(request.message())
-            .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
-                .build())
-            .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
-            .call()
-            .content();
-        long latency = System.currentTimeMillis() - currentTimeMillis;
+        long startTime = System.currentTimeMillis();
+        try {
+            String content = chatClient.prompt()
+                .user(request.message())
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                    .build())
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
+                .call()
+                .content();
+            long latency = System.currentTimeMillis() - startTime;
 
-        return new MemoryChatResponse(request.conversationId(), content, aiProviderProperties.provider(), aiProviderProperties.model(),
-            aiProviderProperties.profile(), latency);
+            return new MemoryChatResponse(request.conversationId(), content, aiProviderProperties.provider(), aiProviderProperties.model(),
+                aiProviderProperties.profile(), latency);
+        } catch (RuntimeException ex) {
+            long latencyMs = System.currentTimeMillis() - startTime;
+            aiReviewMetrics.recordFailure("memory-chat", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs, ex.getClass()
+                .getSimpleName());
+            throw ex;
+        }
     }
 
-    public MemoryChatService(ChatClient chatClient, ChatMemory chatMemory, AiProviderProperties aiProviderProperties) {
+    public MemoryChatService(ChatClient chatClient, ChatMemory chatMemory, AiProviderProperties aiProviderProperties, AiReviewMetrics aiReviewMetrics) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.aiProviderProperties = aiProviderProperties;
+        this.aiReviewMetrics = aiReviewMetrics;
     }
 
     public void clear(String conversationId) {

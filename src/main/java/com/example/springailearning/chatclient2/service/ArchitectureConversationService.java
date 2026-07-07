@@ -15,6 +15,7 @@ import com.example.springailearning.chatclient2.dto.request.ArchitectureConversa
 import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationResponse;
 import com.example.springailearning.chatclient2.dto.response.ArchitectureConversationStatusResponse;
 import com.example.springailearning.chatclient2.enums.ArchitectureConversationStep;
+import com.example.springailearning.chatclient2.metric.AiReviewMetrics;
 import com.example.springailearning.chatclient2.state.ConversationStateRepository;
 import com.example.springailearning.chatclient2.state.ConversationStateUpdater;
 
@@ -27,9 +28,11 @@ public class ArchitectureConversationService {
     private final ConversationStateRepository stateRepository;
     private final ConversationStateUpdater stateUpdater;
     private final ArchitectureConversationStepResolver stepResolver;
+    private final AiReviewMetrics aiReviewMetrics;
 
     public ArchitectureConversationService(ChatClient chatClient, ChatMemory chatMemory, AiProviderProperties aiProviderProperties,
-        ConversationStateRepository stateRepository, ConversationStateUpdater stateUpdater, ArchitectureConversationStepResolver stepResolver) {
+        ConversationStateRepository stateRepository, ConversationStateUpdater stateUpdater, ArchitectureConversationStepResolver stepResolver,
+        AiReviewMetrics aiReviewMetrics) {
 
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
@@ -37,38 +40,47 @@ public class ArchitectureConversationService {
         this.stateRepository = stateRepository;
         this.stateUpdater = stateUpdater;
         this.stepResolver = stepResolver;
+        this.aiReviewMetrics = aiReviewMetrics;
     }
 
     public ArchitectureConversationResponse chat(ArchitectureConversationRequest request) {
 
         long start = System.currentTimeMillis();
+        try {
 
-        ConversationState currentState = stateRepository.getOrCreate(request.conversationId());
+            ConversationState currentState = stateRepository.getOrCreate(request.conversationId());
 
-        ConversationState updatedState = stateUpdater.updateFromUserMessage(currentState, request.message());
+            ConversationState updatedState = stateUpdater.updateFromUserMessage(currentState, request.message());
 
-        List<String> missingFields = stepResolver.missingFields(updatedState);
+            List<String> missingFields = stepResolver.missingFields(updatedState);
 
-        ArchitectureConversationStep step = stepResolver.resolve(updatedState);
+            ArchitectureConversationStep step = stepResolver.resolve(updatedState);
 
-        String answer = chatClient.prompt()
-            .user(user -> user.text(PromptCatalogue.MULTI_TURN_ARCHITECTURE_REVIEW_V1)
-                .param("step", step.name())
-                .param("state", formatState(updatedState))
-                .param("missingFields", missingFields.toString())
-                .param("message", request.message()))
-            .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
-                .build())
-            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
-            .call()
-            .content();
+            String answer = chatClient.prompt()
+                .user(user -> user.text(PromptCatalogue.MULTI_TURN_ARCHITECTURE_REVIEW_V1)
+                    .param("step", step.name())
+                    .param("state", formatState(updatedState))
+                    .param("missingFields", missingFields.toString())
+                    .param("message", request.message()))
+                .advisors(MessageChatMemoryAdvisor.builder(chatMemory)
+                    .build())
+                .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, request.conversationId()))
+                .call()
+                .content();
 
-        stateRepository.save(updatedState);
+            stateRepository.save(updatedState);
 
-        long latencyMs = System.currentTimeMillis() - start;
+            long latencyMs = System.currentTimeMillis() - start;
 
-        return new ArchitectureConversationResponse(request.conversationId(), answer, step, missingFields, updatedState, aiProviderProperties.provider(),
-            aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs);
+            return new ArchitectureConversationResponse(request.conversationId(), answer, step, missingFields, updatedState, aiProviderProperties.provider(),
+                aiProviderProperties.model(), aiProviderProperties.profile(), latencyMs);
+        } catch (RuntimeException ex) {
+            long latencyMs = System.currentTimeMillis() - start;
+            aiReviewMetrics.recordFailure("architecture-conversation", aiProviderProperties.provider(), aiProviderProperties.model(), latencyMs,
+                ex.getClass()
+                    .getSimpleName());
+            throw ex;
+        }
     }
 
     public ConversationState getState(String conversationId) {
